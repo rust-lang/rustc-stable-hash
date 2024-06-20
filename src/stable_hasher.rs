@@ -10,7 +10,7 @@ mod tests;
 
 /// Trait for retrieving the result of the stable hashing operation.
 pub trait StableHasherResult: Sized {
-    fn finish(hash: (u64, u64)) -> Self;
+    fn finish(hash: [u64; 2]) -> Self;
 }
 
 /// When hashing something that ends up affecting properties like symbol names,
