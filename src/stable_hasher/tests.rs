@@ -9,6 +9,15 @@ use super::*;
 // ways). The expected values depend on the hashing algorithm used, so they
 // need to be updated whenever StableHasher changes its hashing algorithm.
 
+#[derive(Debug, PartialEq)]
+struct TestHash((u64, u64));
+
+impl StableHasherResult for TestHash {
+    fn finish(hash: (u64, u64)) -> TestHash {
+        TestHash(hash)
+    }
+}
+
 #[test]
 fn test_hash_integers() {
     // Test that integers are handled consistently across platforms.
@@ -41,9 +50,9 @@ fn test_hash_integers() {
     test_isize.hash(&mut h);
 
     // This depends on the hashing algorithm. See note at top of file.
-    let expected = (13997337031081104755, 6178945012502239489);
+    let expected = TestHash((13997337031081104755, 6178945012502239489));
 
-    assert_eq!(h.finalize(), expected);
+    assert_eq!(expected, h.finish());
 }
 
 #[test]
@@ -55,9 +64,9 @@ fn test_hash_usize() {
     test_usize.hash(&mut h);
 
     // This depends on the hashing algorithm. See note at top of file.
-    let expected = (12037165114281468837, 3094087741167521712);
+    let expected = TestHash((12037165114281468837, 3094087741167521712));
 
-    assert_eq!(h.finalize(), expected);
+    assert_eq!(expected, h.finish());
 }
 
 #[test]
@@ -69,15 +78,15 @@ fn test_hash_isize() {
     test_isize.hash(&mut h);
 
     // This depends on the hashing algorithm. See note at top of file.
-    let expected = (3979067582695659080, 2322428596355037273);
+    let expected = TestHash((3979067582695659080, 2322428596355037273));
 
-    assert_eq!(h.finalize(), expected);
+    assert_eq!(expected, h.finish());
 }
 
-fn hash<T: Hash>(t: &T) -> (u64, u64) {
+fn hash<T: Hash>(t: &T) -> TestHash {
     let mut h = StableHasher::new();
     t.hash(&mut h);
-    h.finalize()
+    h.finish()
 }
 
 // Check that the `isize` hashing optimization does not produce the same hash when permuting two
