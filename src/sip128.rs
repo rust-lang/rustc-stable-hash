@@ -378,7 +378,7 @@ impl SipHasher128 {
     }
 
     #[inline]
-    pub fn finish128(mut self) -> (u64, u64) {
+    pub fn finish128(mut self) -> [u64; 2] {
         debug_assert!(self.nbuf < BUFFER_SIZE);
 
         // Process full elements in buffer.
@@ -426,7 +426,7 @@ impl SipHasher128 {
         Sip13Rounds::d_rounds(&mut state);
         let _1 = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
 
-        (_0, _1)
+        [_0, _1]
     }
 }
 

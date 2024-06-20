@@ -14,14 +14,15 @@ impl<'a> Hash for Bytes<'a> {
     }
 }
 
-fn hash_with<T: Hash>(mut st: SipHasher128, x: &T) -> (u64, u64) {
+fn hash_with<T: Hash>(mut st: SipHasher128, x: &T) -> [u64; 2] {
     x.hash(&mut st);
     st.finish128()
 }
 
-fn hash<T: Hash>(x: &T) -> (u64, u64) {
+fn hash<T: Hash>(x: &T) -> [u64; 2] {
     hash_with(SipHasher128::new_with_keys(0, 0), x)
 }
+
 #[rustfmt::skip]
 const TEST_VECTOR: [[u8; 16]; 64] = [
     [0xe7, 0x7e, 0xbc, 0xb2, 0x27, 0x88, 0xa5, 0xbe, 0xfd, 0x62, 0xdb, 0x6a, 0xdd, 0x30, 0x30, 0x01],
@@ -99,7 +100,7 @@ fn test_siphash_1_3_test_vector() {
 
     for i in 0..64 {
         let out = hash_with(SipHasher128::new_with_keys(k0, k1), &Bytes(&input[..]));
-        let expected = (
+        let expected = [
             ((TEST_VECTOR[i][0] as u64) << 0)
                 | ((TEST_VECTOR[i][1] as u64) << 8)
                 | ((TEST_VECTOR[i][2] as u64) << 16)
@@ -116,7 +117,7 @@ fn test_siphash_1_3_test_vector() {
                 | ((TEST_VECTOR[i][13] as u64) << 40)
                 | ((TEST_VECTOR[i][14] as u64) << 48)
                 | ((TEST_VECTOR[i][15] as u64) << 56),
-        );
+        ];
 
         assert_eq!(out, expected);
         input.push(i as u8);
