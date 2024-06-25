@@ -8,11 +8,8 @@ use std::hash::Hasher;
 #[cfg(test)]
 mod tests;
 
-/// Trait for retrieving the result of the stable hashing operation.
-pub trait StableHasherResult: Sized {
-    fn finish(hash: [u64; 2]) -> Self;
-}
-
+/// A Stable Hasher adapted for cross-platform independent hash.
+///
 /// When hashing something that ends up affecting properties like symbol names,
 /// we want these symbol names to be calculated independently of other factors
 /// like what architecture you're compiling *from*.
@@ -20,8 +17,77 @@ pub trait StableHasherResult: Sized {
 /// To that end we always convert integers to little-endian format before
 /// hashing and the architecture dependent `isize` and `usize` types are
 /// extended to 64 bits if needed.
+///
+/// # Example
+///
+/// ```
+/// use rustc_stable_hash::{StableHasher, StableHasherResult};
+/// use std::hash::Hasher;
+///
+/// struct Hash128([u64; 2]);
+/// impl StableHasherResult for Hash128 {
+///     fn finish(hash: [u64; 2]) -> Hash128 {
+///         Hash128(hash)
+///     }
+/// }
+///
+/// let mut hasher = StableHasher::new();
+/// hasher.write_usize(0xFA);
+///
+/// let hash: Hash128 = hasher.finish();
+/// ```
+#[must_use]
 pub struct StableHasher {
     state: SipHasher128,
+}
+
+/// Trait for retrieving the result of the stable hashing operation.
+///
+/// # Example
+///
+/// ```
+/// use rustc_stable_hash::{StableHasher, StableHasherResult};
+///
+/// struct Hash128(u128);
+///
+/// impl StableHasherResult for Hash128 {
+///     fn finish(hash: [u64; 2]) -> Hash128 {
+///         let upper: u128 = hash[0] as u128;
+///         let lower: u128 = hash[1] as u128;
+///    
+///         Hash128((upper << 64) | lower)
+///     }
+/// }
+/// ```
+pub trait StableHasherResult: Sized {
+    /// Retrieving the finalized state of the [`StableHasher`] and construct
+    /// an [`Self`] containing the hash.
+    fn finish(hasher: [u64; 2]) -> Self;
+}
+
+impl StableHasher {
+    /// Creates a new [`StableHasher`].
+    ///
+    /// To be used with the [`Hasher`] implementation and [`StableHasher::finish`].
+    #[inline]
+    #[must_use]
+    pub fn new() -> Self {
+        StableHasher {
+            state: SipHasher128::new_with_keys(0, 0),
+        }
+    }
+
+    /// Returns the typed-hash value for the values written.
+    ///
+    /// The resulting typed-hash value is constructed from an
+    /// [`StableHasherResult`] implemenation.
+    ///
+    /// To be used in-place of [`Hasher::finish`].
+    #[inline]
+    #[must_use]
+    pub fn finish<W: StableHasherResult>(self) -> W {
+        W::finish(self.state.finish128())
+    }
 }
 
 impl fmt::Debug for StableHasher {
@@ -30,21 +96,15 @@ impl fmt::Debug for StableHasher {
     }
 }
 
-impl StableHasher {
-    #[inline]
-    pub fn new() -> Self {
-        StableHasher {
-            state: SipHasher128::new_with_keys(0, 0),
-        }
-    }
-
-    #[inline]
-    pub fn finish<W: StableHasherResult>(self) -> W {
-        W::finish(self.state.finish128())
-    }
-}
-
 impl Hasher for StableHasher {
+    /// <div class="warning">
+    ///
+    /// Do not use this function, it will unconditionnaly panic.
+    ///
+    /// Use instead [`StableHasher::finish`] which returns a
+    /// `[u64; 2]` for greater precision.
+    ///
+    /// </div>
     fn finish(&self) -> u64 {
         panic!("use StableHasher::finalize instead");
     }
