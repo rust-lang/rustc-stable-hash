@@ -378,14 +378,13 @@ impl SipHasher128 {
     }
 
     #[inline]
-    pub fn finish128(mut self) -> [u64; 2] {
+    pub fn finish128(&self) -> [u64; 2] {
         debug_assert!(self.nbuf < BUFFER_SIZE);
 
         // Process full elements in buffer.
         let last = self.nbuf / ELEM_SIZE;
 
-        // Since we're consuming self, avoid updating members for a potential
-        // performance gain.
+        // Copy the state to compute the final hash.
         let mut state = self.state;
 
         for i in 0..last {
@@ -396,18 +395,25 @@ impl SipHasher128 {
         }
 
         // Get remaining partial element.
-        let elem = if self.nbuf % ELEM_SIZE != 0 {
-            unsafe {
-                // Ensure element is initialized by writing zero bytes. At most
-                // `ELEM_SIZE - 1` are required given the above check. It's safe
-                // to write this many because we have the spill and we maintain
-                // `self.nbuf` such that this write will start before the spill.
-                let dst = (self.buf.as_mut_ptr() as *mut u8).add(self.nbuf);
-                ptr::write_bytes(dst, 0, ELEM_SIZE - 1);
-                self.buf.get_unchecked(last).assume_init().to_le()
+        let elem = {
+            let initialiazed = self.nbuf % ELEM_SIZE;
+            if initialiazed != 0 {
+                unsafe {
+                    let mut a: MaybeUninit<u64> = self.buf.get_unchecked(last).clone();
+
+                    // Ensure element is initialized by writing zero bytes by writing
+                    // zero bytes to the uninitialized part of the number.
+                    ptr::write_bytes(
+                        a.as_mut_ptr().cast::<u8>().add(initialiazed),
+                        0,
+                        ELEM_SIZE - initialiazed,
+                    );
+
+                    a.assume_init().to_le()
+                }
+            } else {
+                0
             }
-        } else {
-            0
         };
 
         // Finalize the hash.
@@ -496,7 +502,10 @@ impl Hasher for SipHasher128 {
     }
 
     fn finish(&self) -> u64 {
-        panic!("SipHasher128 cannot provide valid 64 bit hashes")
+        let [a, b] = self.finish128();
+
+        // Combining the two halves makes sure we get a good quality hash.
+        a.wrapping_mul(3).wrapping_add(b).to_le()
     }
 }
 

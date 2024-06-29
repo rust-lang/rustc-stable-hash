@@ -97,16 +97,11 @@ impl fmt::Debug for StableHasher {
 }
 
 impl Hasher for StableHasher {
-    /// <div class="warning">
+    /// Returns a combined hash.
     ///
-    /// Do not use this function, it will unconditionnaly panic.
-    ///
-    /// Use instead [`StableHasher::finish`] which returns a
-    /// `[u64; 2]` for greater precision.
-    ///
-    /// </div>
+    /// For greater precision use instead [`StableHasher::finish`].
     fn finish(&self) -> u64 {
-        panic!("use StableHasher::finalize instead");
+        self.state.finish()
     }
 
     #[inline]
