@@ -303,3 +303,13 @@ fn test_fill_buffer() {
     test_fill_buffer!(i128, write_i128);
     test_fill_buffer!(isize, write_isize);
 }
+
+#[test]
+fn test_finish() {
+    let mut hasher = SipHasher128::new_with_keys(0, 0);
+
+    hasher.write_isize(0xF0);
+    hasher.write_isize(0xF0010);
+
+    assert_eq!(hasher.finish(), hasher.finish());
+}

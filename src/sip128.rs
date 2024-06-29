@@ -502,7 +502,10 @@ impl Hasher for SipHasher128 {
     }
 
     fn finish(&self) -> u64 {
-        panic!("SipHasher128 cannot provide valid 64 bit hashes")
+        let [a, b] = self.finish128();
+
+        // Combining the two halves makes sure we get a good quality hash.
+        a.wrapping_mul(3).wrapping_add(b).to_le()
     }
 }
 
