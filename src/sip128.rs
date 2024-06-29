@@ -502,7 +502,11 @@ impl Hasher for SipHasher128 {
     }
 
     fn finish(&self) -> u64 {
-        panic!("SipHasher128 cannot provide valid 64 bit hashes")
+        let mut buf = self.buf.clone();
+        let [a, b] = SipHasher128::finish128_inner(self.nbuf, &mut buf, self.state, self.processed);
+
+        // Combining the two halves makes sure we get a good quality hash.
+        a.wrapping_mul(3).wrapping_add(b).to_le()
     }
 }
 
