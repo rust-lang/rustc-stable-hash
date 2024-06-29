@@ -378,41 +378,47 @@ impl SipHasher128 {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn finish128(mut self) -> [u64; 2] {
-        debug_assert!(self.nbuf < BUFFER_SIZE);
+        SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
+    }
+
+    #[inline]
+    fn finish128_inner(
+        nbuf: usize,
+        buf: &mut [MaybeUninit<u64>; BUFFER_WITH_SPILL_CAPACITY],
+        mut state: State,
+        processed: usize,
+    ) -> [u64; 2] {
+        debug_assert!(nbuf < BUFFER_SIZE);
 
         // Process full elements in buffer.
-        let last = self.nbuf / ELEM_SIZE;
-
-        // Since we're consuming self, avoid updating members for a potential
-        // performance gain.
-        let mut state = self.state;
+        let last = nbuf / ELEM_SIZE;
 
         for i in 0..last {
-            let elem = unsafe { self.buf.get_unchecked(i).assume_init().to_le() };
+            let elem = unsafe { buf.get_unchecked(i).assume_init().to_le() };
             state.v3 ^= elem;
             Sip13Rounds::c_rounds(&mut state);
             state.v0 ^= elem;
         }
 
         // Get remaining partial element.
-        let elem = if self.nbuf % ELEM_SIZE != 0 {
+        let elem = if nbuf % ELEM_SIZE != 0 {
             unsafe {
                 // Ensure element is initialized by writing zero bytes. At most
                 // `ELEM_SIZE - 1` are required given the above check. It's safe
                 // to write this many because we have the spill and we maintain
                 // `self.nbuf` such that this write will start before the spill.
-                let dst = (self.buf.as_mut_ptr() as *mut u8).add(self.nbuf);
+                let dst = (buf.as_mut_ptr() as *mut u8).add(nbuf);
                 ptr::write_bytes(dst, 0, ELEM_SIZE - 1);
-                self.buf.get_unchecked(last).assume_init().to_le()
+                buf.get_unchecked(last).assume_init().to_le()
             }
         } else {
             0
         };
 
         // Finalize the hash.
-        let length = self.processed.debug_strict_add(self.nbuf);
+        let length = processed.debug_strict_add(nbuf);
         let b: u64 = ((length as u64 & 0xff) << 56) | elem;
 
         state.v3 ^= b;
