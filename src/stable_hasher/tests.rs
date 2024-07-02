@@ -1,6 +1,7 @@
 use std::hash::Hash;
 
 use super::*;
+use crate::StableSipHasher128;
 
 // The tests below compare the computed hashes to particular expected values
 // in order to test that we produce the same results on different platforms,
@@ -13,7 +14,9 @@ use super::*;
 struct TestHash([u64; 2]);
 
 impl StableHasherResult for TestHash {
-    fn finish(hash: [u64; 2]) -> TestHash {
+    type Hash = [u64; 2];
+
+    fn finish(hash: Self::Hash) -> TestHash {
         TestHash(hash)
     }
 }
@@ -35,7 +38,7 @@ fn test_hash_integers() {
     let test_i128 = -500_i128;
     let test_isize = -600_isize;
 
-    let mut h = StableHasher::new();
+    let mut h = StableSipHasher128::new();
     test_u8.hash(&mut h);
     test_u16.hash(&mut h);
     test_u32.hash(&mut h);
@@ -60,7 +63,7 @@ fn test_hash_usize() {
     // Test that usize specifically is handled consistently across platforms.
     let test_usize = 0xABCDEF01_usize;
 
-    let mut h = StableHasher::new();
+    let mut h = StableSipHasher128::new();
     test_usize.hash(&mut h);
 
     // This depends on the hashing algorithm. See note at top of file.
@@ -74,7 +77,7 @@ fn test_hash_isize() {
     // Test that isize specifically is handled consistently across platforms.
     let test_isize = -7_isize;
 
-    let mut h = StableHasher::new();
+    let mut h = StableSipHasher128::new();
     test_isize.hash(&mut h);
 
     // This depends on the hashing algorithm. See note at top of file.
@@ -84,7 +87,7 @@ fn test_hash_isize() {
 }
 
 fn hash<T: Hash>(t: &T) -> TestHash {
-    let mut h = StableHasher::new();
+    let mut h = StableSipHasher128::new();
     t.hash(&mut h);
     h.finish()
 }
