@@ -1,12 +1,60 @@
 //! Stable hasher adapted for cross-platform independent hash.
 
-use crate::sip128::SipHasher128;
-
 use std::fmt;
 use std::hash::Hasher;
 
 #[cfg(test)]
 mod tests;
+
+/// Extended [`Hasher`] trait for use with [`StableHasher`].
+///
+/// It permits returning an arbitrary type as the [`Self::Hash`] type
+/// contrary to the [`Hasher`] trait which can only return `u64`. This
+/// is useful when the hasher uses a different representation.
+///
+/// # Example
+///
+/// ```
+/// use std::hash::Hasher;
+/// use rustc_stable_hash::ExtendedHasher;
+///
+/// struct BogusHasher(u128);
+///
+/// impl Hasher for BogusHasher {
+///     fn write(&mut self, a: &[u8]) {
+///         # self.0 = a.iter().fold(0u128, |acc, a| acc + (*a as u128)) + self.0;
+///         // ...
+///     }
+///
+///     fn finish(&self) -> u64 {
+///         self.0 as u64 // really bogus
+///     }
+/// }
+///
+/// impl ExtendedHasher for BogusHasher {
+///     type Hash = u128;
+///
+///     fn short_write<const LEN: usize>(&mut self, bytes: [u8; LEN]) {
+///         self.write(&bytes)
+///     }
+///
+///     fn finish(self) -> Self::Hash {
+///         self.0
+///     }
+/// }
+/// ```
+pub trait ExtendedHasher: Hasher {
+    /// Type returned by the hasher.
+    type Hash;
+
+    /// Optimized version of [`Hasher::write`] but for small write.
+    fn short_write<const LEN: usize>(&mut self, bytes: [u8; LEN]) {
+        self.write(&bytes);
+    }
+
+    /// Finalization method of the hasher to return the [`Hash`].
+    fn finish(self) -> Self::Hash;
+}
 
 /// A Stable Hasher adapted for cross-platform independent hash.
 ///
@@ -21,24 +69,26 @@ mod tests;
 /// # Example
 ///
 /// ```
-/// use rustc_stable_hash::{StableHasher, StableHasherResult};
+/// use rustc_stable_hash::{StableHasher, StableHasherResult, StableSipHasher128};
 /// use std::hash::Hasher;
 ///
 /// struct Hash128([u64; 2]);
 /// impl StableHasherResult for Hash128 {
+///     type Hash = [u64; 2];
+///
 ///     fn finish(hash: [u64; 2]) -> Hash128 {
 ///         Hash128(hash)
 ///     }
 /// }
 ///
-/// let mut hasher = StableHasher::new();
+/// let mut hasher = StableSipHasher128::new();
 /// hasher.write_usize(0xFA);
 ///
 /// let hash: Hash128 = hasher.finish();
 /// ```
 #[must_use]
-pub struct StableHasher {
-    state: SipHasher128,
+pub struct StableHasher<H: ExtendedHasher> {
+    state: H,
 }
 
 /// Trait for retrieving the result of the stable hashing operation.
@@ -51,6 +101,8 @@ pub struct StableHasher {
 /// struct Hash128(u128);
 ///
 /// impl StableHasherResult for Hash128 {
+///     type Hash = [u64; 2];
+///
 ///     fn finish(hash: [u64; 2]) -> Hash128 {
 ///         let upper: u128 = hash[0] as u128;
 ///         let lower: u128 = hash[1] as u128;
@@ -60,21 +112,49 @@ pub struct StableHasher {
 /// }
 /// ```
 pub trait StableHasherResult: Sized {
+    type Hash;
+
     /// Retrieving the finalized state of the [`StableHasher`] and construct
     /// an [`Self`] containing the hash.
-    fn finish(hasher: [u64; 2]) -> Self;
+    fn finish(hash: Self::Hash) -> Self;
 }
 
-impl StableHasher {
+impl<H: ExtendedHasher + Default> StableHasher<H> {
     /// Creates a new [`StableHasher`].
     ///
     /// To be used with the [`Hasher`] implementation and [`StableHasher::finish`].
     #[inline]
     #[must_use]
     pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl<H: ExtendedHasher + Default> Default for StableHasher<H> {
+    /// Creates a new [`StableHasher`].
+    ///
+    /// To be used with the [`Hasher`] implementation and [`StableHasher::finish`].
+    #[inline]
+    #[must_use]
+    fn default() -> Self {
         StableHasher {
-            state: SipHasher128::new_with_keys(0, 0),
+            state: Default::default(),
         }
+    }
+}
+
+impl<H: ExtendedHasher> StableHasher<H> {
+    /// Creates a new [`StableHasher`] from an already created [`ExtendedHasher`].
+    ///
+    /// Useful when wanting to initialize a hasher with different parameters/keys.
+    ///
+    /// **Important**: Any use of the hasher before being given to a [`StableHasher`]
+    /// is not covered by this crate guarentees and will make the resulting hash
+    /// NOT platform independent.
+    #[inline]
+    #[must_use]
+    pub fn with_hasher(state: H) -> Self {
+        StableHasher { state }
     }
 
     /// Returns the typed-hash value for the values written.
@@ -85,23 +165,23 @@ impl StableHasher {
     /// To be used in-place of [`Hasher::finish`].
     #[inline]
     #[must_use]
-    pub fn finish<W: StableHasherResult>(self) -> W {
-        W::finish(self.state.finish128())
+    pub fn finish<W: StableHasherResult<Hash = H::Hash>>(self) -> W {
+        W::finish(self.state.finish())
     }
 }
 
-impl fmt::Debug for StableHasher {
+impl<H: ExtendedHasher + fmt::Debug> fmt::Debug for StableHasher<H> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.state)
     }
 }
 
-impl Hasher for StableHasher {
+impl<H: ExtendedHasher> Hasher for StableHasher<H> {
     /// Returns a combined hash.
     ///
     /// For greater precision use instead [`StableHasher::finish`].
     fn finish(&self) -> u64 {
-        self.state.finish()
+        Hasher::finish(&self.state)
     }
 
     #[inline]
@@ -192,7 +272,7 @@ impl Hasher for StableHasher {
         // Cold path
         #[cold]
         #[inline(never)]
-        fn hash_value(state: &mut SipHasher128, value: u64) {
+        fn hash_value<H: ExtendedHasher>(state: &mut H, value: u64) {
             state.write_u8(0xFF);
             state.short_write(value.to_le_bytes());
         }

@@ -16,7 +16,7 @@ impl<'a> Hash for Bytes<'a> {
 
 fn hash_with<T: Hash>(mut st: SipHasher128, x: &T) -> [u64; 2] {
     x.hash(&mut st);
-    st.finish128()
+    st.finish()
 }
 
 fn hash<T: Hash>(x: &T) -> [u64; 2] {
@@ -253,8 +253,8 @@ fn test_short_write_works() {
     h2.write(&test_i128.to_ne_bytes());
     h2.write(&test_isize.to_ne_bytes());
 
-    let h1_hash = h1.finish128();
-    let h2_hash = h2.finish128();
+    let h1_hash = h1.finish();
+    let h2_hash = h2.finish();
 
     assert_eq!(h1_hash, h2_hash);
 }
@@ -279,8 +279,8 @@ macro_rules! test_fill_buffer {
             h2.write(s);
             h2.write(x_bytes);
 
-            let h1_hash = h1.finish128();
-            let h2_hash = h2.finish128();
+            let h1_hash = h1.finish();
+            let h2_hash = h2.finish();
 
             assert_eq!(h1_hash, h2_hash);
         }
@@ -306,10 +306,14 @@ fn test_fill_buffer() {
 
 #[test]
 fn test_finish() {
+    fn hash<H: Hasher>(h: &H) -> u64 {
+        h.finish()
+    }
+
     let mut hasher = SipHasher128::new_with_keys(0, 0);
 
     hasher.write_isize(0xF0);
     hasher.write_isize(0xF0010);
 
-    assert_eq!(hasher.finish(), hasher.finish());
+    assert_eq!(hash(&hasher), hash(&hasher));
 }

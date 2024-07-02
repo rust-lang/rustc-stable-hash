@@ -3,6 +3,7 @@
 // This code is very hot and uses lots of arithmetic, avoid overflow checks for performance.
 // See https://github.com/rust-lang/rust/pull/119440#issuecomment-1874255727
 use crate::int_overflow::{DebugStrictAdd, DebugStrictSub};
+use crate::ExtendedHasher;
 
 use std::hash::Hasher;
 use std::mem::{self, MaybeUninit};
@@ -214,28 +215,6 @@ impl SipHasher128 {
         hasher
     }
 
-    #[inline]
-    pub fn short_write<const LEN: usize>(&mut self, bytes: [u8; LEN]) {
-        let nbuf = self.nbuf;
-        debug_assert!(LEN <= 8);
-        debug_assert!(nbuf < BUFFER_SIZE);
-        debug_assert!(nbuf + LEN < BUFFER_WITH_SPILL_SIZE);
-
-        if nbuf.debug_strict_add(LEN) < BUFFER_SIZE {
-            unsafe {
-                // The memcpy call is optimized away because the size is known.
-                let dst = (self.buf.as_mut_ptr() as *mut u8).add(nbuf);
-                ptr::copy_nonoverlapping(bytes.as_ptr(), dst, LEN);
-            }
-
-            self.nbuf = nbuf.debug_strict_add(LEN);
-
-            return;
-        }
-
-        unsafe { self.short_write_process_buffer(bytes) }
-    }
-
     // A specialized write function for values with size <= 8 that should only
     // be called when the write would cause the buffer to fill.
     //
@@ -378,13 +357,6 @@ impl SipHasher128 {
         }
     }
 
-    #[inline(always)]
-    pub fn finish128(mut self) -> [u64; 2] {
-        unsafe {
-            SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
-        }
-    }
-
     // A function for finishing the hashing.
     //
     // SAFETY: `buf` must be initialized up to the byte offset `nbuf`.
@@ -439,6 +411,45 @@ impl SipHasher128 {
         let _1 = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
 
         [_0, _1]
+    }
+}
+
+impl Default for SipHasher128 {
+    fn default() -> SipHasher128 {
+        SipHasher128::new_with_keys(0, 0)
+    }
+}
+
+impl ExtendedHasher for SipHasher128 {
+    type Hash = [u64; 2];
+
+    #[inline]
+    fn short_write<const LEN: usize>(&mut self, bytes: [u8; LEN]) {
+        let nbuf = self.nbuf;
+        debug_assert!(LEN <= 8);
+        debug_assert!(nbuf < BUFFER_SIZE);
+        debug_assert!(nbuf + LEN < BUFFER_WITH_SPILL_SIZE);
+
+        if nbuf.debug_strict_add(LEN) < BUFFER_SIZE {
+            unsafe {
+                // The memcpy call is optimized away because the size is known.
+                let dst = (self.buf.as_mut_ptr() as *mut u8).add(nbuf);
+                ptr::copy_nonoverlapping(bytes.as_ptr(), dst, LEN);
+            }
+
+            self.nbuf = nbuf.debug_strict_add(LEN);
+
+            return;
+        }
+
+        unsafe { self.short_write_process_buffer(bytes) }
+    }
+
+    #[inline(always)]
+    fn finish(mut self) -> [u64; 2] {
+        unsafe {
+            SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
+        }
     }
 }
 
