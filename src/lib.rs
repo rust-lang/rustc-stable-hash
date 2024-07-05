@@ -6,6 +6,19 @@ mod int_overflow;
 mod sip128;
 mod stable_hasher;
 
+/// Hashers collection
+pub mod hashers {
+    #[doc(inline)]
+    pub use super::sip128::SipHasher128;
+
+    /// Stable 128-bits Sip Hasher
+    ///
+    /// [`StableHasher`] version of [`SipHasher128`].
+    ///
+    /// [`StableHasher`]: super::StableHasher
+    pub type StableSipHasher128 = super::StableHasher<SipHasher128>;
+}
+
 #[doc(inline)]
 pub use stable_hasher::StableHasher;
 
@@ -15,7 +28,5 @@ pub use stable_hasher::StableHasherResult;
 #[doc(inline)]
 pub use stable_hasher::ExtendedHasher;
 
-pub use sip128::SipHasher128; // TODO: Should SipHasher128 be exposed?
-
-/// Stable Sip Hasher 128
-pub type StableSipHasher128 = StableHasher<SipHasher128>;
+#[doc(inline)]
+pub use hashers::StableSipHasher128;
