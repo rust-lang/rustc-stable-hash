@@ -380,11 +380,16 @@ impl SipHasher128 {
 
     #[inline(always)]
     pub fn finish128(mut self) -> [u64; 2] {
-        SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
+        unsafe {
+            SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
+        }
     }
 
+    // A function for finishing the hashing.
+    //
+    // SAFETY: `buf` must be initialized up to the byte offset `nbuf`.
     #[inline]
-    fn finish128_inner(
+    unsafe fn finish128_inner(
         nbuf: usize,
         buf: &mut [MaybeUninit<u64>; BUFFER_WITH_SPILL_CAPACITY],
         mut state: State,
@@ -504,7 +509,9 @@ impl Hasher for SipHasher128 {
 
     fn finish(&self) -> u64 {
         let mut buf = self.buf.clone();
-        let [a, b] = SipHasher128::finish128_inner(self.nbuf, &mut buf, self.state, self.processed);
+        let [a, b] = unsafe {
+            SipHasher128::finish128_inner(self.nbuf, &mut buf, self.state, self.processed)
+        };
 
         // Combining the two halves makes sure we get a good quality hash.
         a.wrapping_mul(3).wrapping_add(b).to_le()
