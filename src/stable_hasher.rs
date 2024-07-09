@@ -69,14 +69,15 @@ pub trait ExtendedHasher: Hasher {
 /// # Example
 ///
 /// ```
-/// use rustc_stable_hash::{StableHasher, StableHasherResult, StableSipHasher128};
+/// use rustc_stable_hash::hashers::{StableSipHasher128, SipHasher128Hash};
+/// use rustc_stable_hash::{StableHasher, StableHasherResult};
 /// use std::hash::Hasher;
 ///
 /// struct Hash128([u64; 2]);
 /// impl StableHasherResult for Hash128 {
-///     type Hash = [u64; 2];
+///     type Hash = SipHasher128Hash;
 ///
-///     fn finish(hash: [u64; 2]) -> Hash128 {
+///     fn finish(SipHasher128Hash(hash): SipHasher128Hash) -> Hash128 {
 ///         Hash128(hash)
 ///     }
 /// }
@@ -106,7 +107,7 @@ pub struct StableHasher<H: ExtendedHasher> {
 ///     fn finish(hash: [u64; 2]) -> Hash128 {
 ///         let upper: u128 = hash[0] as u128;
 ///         let lower: u128 = hash[1] as u128;
-///    
+///
 ///         Hash128((upper << 64) | lower)
 ///     }
 /// }

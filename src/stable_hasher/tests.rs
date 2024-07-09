@@ -1,7 +1,7 @@
 use std::hash::Hash;
 
 use super::*;
-use crate::StableSipHasher128;
+use crate::{SipHasher128Hash, StableSipHasher128};
 
 // The tests below compare the computed hashes to particular expected values
 // in order to test that we produce the same results on different platforms,
@@ -14,9 +14,9 @@ use crate::StableSipHasher128;
 struct TestHash([u64; 2]);
 
 impl StableHasherResult for TestHash {
-    type Hash = [u64; 2];
+    type Hash = SipHasher128Hash;
 
-    fn finish(hash: Self::Hash) -> TestHash {
+    fn finish(SipHasher128Hash(hash): Self::Hash) -> TestHash {
         TestHash(hash)
     }
 }

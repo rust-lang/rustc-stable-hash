@@ -14,12 +14,12 @@ impl<'a> Hash for Bytes<'a> {
     }
 }
 
-fn hash_with<T: Hash>(mut st: SipHasher128, x: &T) -> [u64; 2] {
+fn hash_with<T: Hash>(mut st: SipHasher128, x: &T) -> SipHasher128Hash {
     x.hash(&mut st);
     st.finish()
 }
 
-fn hash<T: Hash>(x: &T) -> [u64; 2] {
+fn hash<T: Hash>(x: &T) -> SipHasher128Hash {
     hash_with(SipHasher128::new_with_keys(0, 0), x)
 }
 
@@ -119,7 +119,7 @@ fn test_siphash_1_3_test_vector() {
                 | ((TEST_VECTOR[i][15] as u64) << 56),
         ];
 
-        assert_eq!(out, expected);
+        assert_eq!(out.0, expected);
         input.push(i as u8);
     }
 }

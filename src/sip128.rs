@@ -41,6 +41,10 @@ const BUFFER_WITH_SPILL_SIZE: usize = BUFFER_WITH_SPILL_CAPACITY * ELEM_SIZE;
 // Index of the spill element in the buffer.
 const BUFFER_SPILL_INDEX: usize = BUFFER_WITH_SPILL_CAPACITY - 1;
 
+/// Hashing result of [`SipHasher128`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SipHasher128Hash(pub [u64; 2]);
+
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct SipHasher128 {
@@ -421,7 +425,7 @@ impl Default for SipHasher128 {
 }
 
 impl ExtendedHasher for SipHasher128 {
-    type Hash = [u64; 2];
+    type Hash = SipHasher128Hash;
 
     #[inline]
     fn short_write<const LEN: usize>(&mut self, bytes: [u8; LEN]) {
@@ -446,10 +450,10 @@ impl ExtendedHasher for SipHasher128 {
     }
 
     #[inline(always)]
-    fn finish(mut self) -> [u64; 2] {
-        unsafe {
+    fn finish(mut self) -> SipHasher128Hash {
+        SipHasher128Hash(unsafe {
             SipHasher128::finish128_inner(self.nbuf, &mut self.buf, self.state, self.processed)
-        }
+        })
     }
 }
 

@@ -9,7 +9,7 @@ mod stable_hasher;
 /// Hashers collection
 pub mod hashers {
     #[doc(inline)]
-    pub use super::sip128::SipHasher128;
+    pub use super::sip128::{SipHasher128, SipHasher128Hash};
 
     /// Stable 128-bits Sip Hasher
     ///
@@ -29,4 +29,4 @@ pub use stable_hasher::StableHasherResult;
 pub use stable_hasher::ExtendedHasher;
 
 #[doc(inline)]
-pub use hashers::StableSipHasher128;
+pub use hashers::{SipHasher128Hash, StableSipHasher128};
