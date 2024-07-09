@@ -15,7 +15,7 @@
 ///
 /// That's a long way to say that this should be used in areas where overflow
 /// is a bug but overflow checking is too slow.
-pub trait DebugStrictAdd {
+pub(crate) trait DebugStrictAdd {
     /// See [`DebugStrictAdd`].
     fn debug_strict_add(self, other: Self) -> Self;
 }
@@ -37,7 +37,7 @@ macro_rules! impl_debug_strict_add {
 }
 
 /// See [`DebugStrictAdd`].
-pub trait DebugStrictSub {
+pub(crate) trait DebugStrictSub {
     /// See [`DebugStrictAdd`].
     fn debug_strict_sub(self, other: Self) -> Self;
 }
