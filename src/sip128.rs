@@ -408,13 +408,13 @@ impl SipHasher128 {
 
         state.v2 ^= 0xee;
         Sip13Rounds::d_rounds(&mut state);
-        let _0 = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
+        let l = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
 
         state.v1 ^= 0xdd;
         Sip13Rounds::d_rounds(&mut state);
-        let _1 = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
+        let h = state.v0 ^ state.v1 ^ state.v2 ^ state.v3;
 
-        [_0, _1]
+        [l, h]
     }
 }
 
@@ -523,7 +523,7 @@ impl Hasher for SipHasher128 {
     }
 
     fn finish(&self) -> u64 {
-        let mut buf = self.buf.clone();
+        let mut buf = self.buf;
         let [a, b] = unsafe {
             SipHasher128::finish128_inner(self.nbuf, &mut buf, self.state, self.processed)
         };

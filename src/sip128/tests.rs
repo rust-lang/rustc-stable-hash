@@ -98,25 +98,26 @@ fn test_siphash_1_3_test_vector() {
 
     let mut input: Vec<u8> = Vec::new();
 
-    for i in 0..64 {
+    #[allow(clippy::identity_op)]
+    for (i, v) in TEST_VECTOR.iter().enumerate() {
         let out = hash_with(SipHasher128::new_with_keys(k0, k1), &Bytes(&input[..]));
         let expected = [
-            ((TEST_VECTOR[i][0] as u64) << 0)
-                | ((TEST_VECTOR[i][1] as u64) << 8)
-                | ((TEST_VECTOR[i][2] as u64) << 16)
-                | ((TEST_VECTOR[i][3] as u64) << 24)
-                | ((TEST_VECTOR[i][4] as u64) << 32)
-                | ((TEST_VECTOR[i][5] as u64) << 40)
-                | ((TEST_VECTOR[i][6] as u64) << 48)
-                | ((TEST_VECTOR[i][7] as u64) << 56),
-            ((TEST_VECTOR[i][8] as u64) << 0)
-                | ((TEST_VECTOR[i][9] as u64) << 8)
-                | ((TEST_VECTOR[i][10] as u64) << 16)
-                | ((TEST_VECTOR[i][11] as u64) << 24)
-                | ((TEST_VECTOR[i][12] as u64) << 32)
-                | ((TEST_VECTOR[i][13] as u64) << 40)
-                | ((TEST_VECTOR[i][14] as u64) << 48)
-                | ((TEST_VECTOR[i][15] as u64) << 56),
+            ((v[0] as u64) << 0)
+                | ((v[1] as u64) << 8)
+                | ((v[2] as u64) << 16)
+                | ((v[3] as u64) << 24)
+                | ((v[4] as u64) << 32)
+                | ((v[5] as u64) << 40)
+                | ((v[6] as u64) << 48)
+                | ((v[7] as u64) << 56),
+            ((v[8] as u64) << 0)
+                | ((v[9] as u64) << 8)
+                | ((v[10] as u64) << 16)
+                | ((v[11] as u64) << 24)
+                | ((v[12] as u64) << 32)
+                | ((v[13] as u64) << 40)
+                | ((v[14] as u64) << 48)
+                | ((v[15] as u64) << 56),
         ];
 
         assert_eq!(out.0, expected);
@@ -128,21 +129,21 @@ fn test_siphash_1_3_test_vector() {
 #[cfg(target_arch = "arm")]
 fn test_hash_usize() {
     let val = 0xdeadbeef_deadbeef_u64;
-    assert!(hash(&(val as u64)) != hash(&(val as usize)));
+    assert!(hash(&val) != hash(&(val as usize)));
     assert_eq!(hash(&(val as u32)), hash(&(val as usize)));
 }
 #[test]
 #[cfg(target_arch = "x86_64")]
 fn test_hash_usize() {
     let val = 0xdeadbeef_deadbeef_u64;
-    assert_eq!(hash(&(val as u64)), hash(&(val as usize)));
+    assert_eq!(hash(&val), hash(&(val as usize)));
     assert!(hash(&(val as u32)) != hash(&(val as usize)));
 }
 #[test]
 #[cfg(target_arch = "x86")]
 fn test_hash_usize() {
     let val = 0xdeadbeef_deadbeef_u64;
-    assert!(hash(&(val as u64)) != hash(&(val as usize)));
+    assert!(hash(&val) != hash(&(val as usize)));
     assert_eq!(hash(&(val as u32)), hash(&(val as usize)));
 }
 
