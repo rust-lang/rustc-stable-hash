@@ -23,7 +23,7 @@ pub mod hashers {
 pub use stable_hasher::StableHasher;
 
 #[doc(inline)]
-pub use stable_hasher::StableHasherResult;
+pub use stable_hasher::FromStableHash;
 
 #[doc(inline)]
 pub use stable_hasher::ExtendedHasher;
