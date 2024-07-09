@@ -70,14 +70,14 @@ pub trait ExtendedHasher: Hasher {
 ///
 /// ```
 /// use rustc_stable_hash::hashers::{StableSipHasher128, SipHasher128Hash};
-/// use rustc_stable_hash::{StableHasher, StableHasherResult};
+/// use rustc_stable_hash::{StableHasher, FromStableHash};
 /// use std::hash::Hasher;
 ///
 /// struct Hash128([u64; 2]);
-/// impl StableHasherResult for Hash128 {
+/// impl FromStableHash for Hash128 {
 ///     type Hash = SipHasher128Hash;
 ///
-///     fn finish(SipHasher128Hash(hash): SipHasher128Hash) -> Hash128 {
+///     fn from(SipHasher128Hash(hash): SipHasher128Hash) -> Hash128 {
 ///         Hash128(hash)
 ///     }
 /// }
@@ -92,19 +92,19 @@ pub struct StableHasher<H: ExtendedHasher> {
     state: H,
 }
 
-/// Trait for retrieving the result of the stable hashing operation.
+/// Trait for processing the result of the stable hashing operation.
 ///
 /// # Example
 ///
 /// ```
-/// use rustc_stable_hash::{StableHasher, StableHasherResult};
+/// use rustc_stable_hash::{StableHasher, FromStableHash};
 ///
 /// struct Hash128(u128);
 ///
-/// impl StableHasherResult for Hash128 {
+/// impl FromStableHash for Hash128 {
 ///     type Hash = [u64; 2];
 ///
-///     fn finish(hash: [u64; 2]) -> Hash128 {
+///     fn from(hash: [u64; 2]) -> Hash128 {
 ///         let upper: u128 = hash[0] as u128;
 ///         let lower: u128 = hash[1] as u128;
 ///
@@ -112,12 +112,12 @@ pub struct StableHasher<H: ExtendedHasher> {
 ///     }
 /// }
 /// ```
-pub trait StableHasherResult: Sized {
+pub trait FromStableHash: Sized {
     type Hash;
 
-    /// Retrieving the finalized state of the [`StableHasher`] and construct
-    /// an [`Self`] containing the hash.
-    fn finish(hash: Self::Hash) -> Self;
+    /// Convert the finalized state of a [`StableHasher`] and construct
+    /// an [`Self`] containing the processed hash.
+    fn from(hash: Self::Hash) -> Self;
 }
 
 impl<H: ExtendedHasher + Default> StableHasher<H> {
@@ -161,13 +161,13 @@ impl<H: ExtendedHasher> StableHasher<H> {
     /// Returns the typed-hash value for the values written.
     ///
     /// The resulting typed-hash value is constructed from an
-    /// [`StableHasherResult`] implemenation.
+    /// [`FromStableHash`] implemenation.
     ///
     /// To be used in-place of [`Hasher::finish`].
     #[inline]
     #[must_use]
-    pub fn finish<W: StableHasherResult<Hash = H::Hash>>(self) -> W {
-        W::finish(self.state.finish())
+    pub fn finish<W: FromStableHash<Hash = H::Hash>>(self) -> W {
+        W::from(self.state.finish())
     }
 }
 

@@ -1,5 +1,6 @@
 # Unreleased
 
+- Rename `StableHasherResult` to `FromStableHash` (#8)
 - Use new-type for returned-hash of `SipHasher128`(`Hash`) (#8)
 - Introduce multi hasher support (#8)
 - `StableHasher::finish` now returns a small hash instead of being fatal (#6)
