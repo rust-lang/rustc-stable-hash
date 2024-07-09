@@ -125,7 +125,6 @@ impl<H: ExtendedHasher + Default> StableHasher<H> {
     ///
     /// To be used with the [`Hasher`] implementation and [`StableHasher::finish`].
     #[inline]
-    #[must_use]
     pub fn new() -> Self {
         Default::default()
     }
@@ -136,7 +135,6 @@ impl<H: ExtendedHasher + Default> Default for StableHasher<H> {
     ///
     /// To be used with the [`Hasher`] implementation and [`StableHasher::finish`].
     #[inline]
-    #[must_use]
     fn default() -> Self {
         StableHasher {
             state: Default::default(),
@@ -153,7 +151,6 @@ impl<H: ExtendedHasher> StableHasher<H> {
     /// is not covered by this crate guarentees and will make the resulting hash
     /// NOT platform independent.
     #[inline]
-    #[must_use]
     pub fn with_hasher(state: H) -> Self {
         StableHasher { state }
     }

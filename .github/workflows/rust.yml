@@ -22,30 +22,52 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v4
-    - run: rustup default stable
-    - run: cargo check
-    - run: cargo test
-    - run: rustup default nightly
-    - run: cargo test --all-features
+      - uses: actions/checkout@v4
+      - run: rustup default stable
+      - run: cargo check
+      - run: cargo test
+      - run: rustup default nightly
+      - run: cargo test --all-features
   cross-test:
     strategy:
       matrix:
         target: [
-          "x86_64-unknown-linux-gnu", # 64-bits, little-endian
-          "i686-unknown-linux-gnu",   # 32-bits, little-endian
-          "mips-unknown-linux-gnu",   # 32-bits, big-endian
-          "mips64-unknown-linux-gnuabi64" # 64-bits, big-endian
-        ]
+            "x86_64-unknown-linux-gnu", # 64-bits, little-endian
+            "i686-unknown-linux-gnu", # 32-bits, little-endian
+            "mips-unknown-linux-gnu", # 32-bits, big-endian
+            "mips64-unknown-linux-gnuabi64", # 64-bits, big-endian
+          ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v4
-    - name: install miri
-      run: rustup toolchain add nightly --no-self-update --component miri && rustup default nightly
-    - run: |
-        cargo miri test --target=${{ matrix.target }} --all-features
-      env:
+      - uses: actions/checkout@v4
+      - name: install miri
+        run: rustup toolchain add nightly --no-self-update --component miri && rustup default nightly
+      - run: |
+          cargo miri test --target=${{ matrix.target }} --all-features
+        env:
           MIRIFLAGS: -Zmiri-strict-provenance
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -Z randomize-layout
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -Z randomize-layout
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all --check
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: cargo doc --workspace --document-private-items --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: rustup component add clippy
+      - run: cargo clippy --workspace --all-targets --no-deps
