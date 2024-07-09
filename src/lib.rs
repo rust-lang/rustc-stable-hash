@@ -3,6 +3,7 @@
 #![cfg_attr(feature = "nightly", feature(hasher_prefixfree_extras))]
 #![deny(clippy::missing_safety_doc)]
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(unreachable_pub)]
 
 mod int_overflow;
 mod sip128;
