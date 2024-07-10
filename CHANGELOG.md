@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.1.0
+
 - Rename `StableHasherResult` to `FromStableHash` [#8][pr8]
 - Use new-type for returned-hash of `SipHasher128`(`Hash`) [#8][pr8]
 - Introduce multi hasher support [#8][pr8]
