@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.1.1
+
+- feat: derive `Clone` for `StableHasher` [#11][pr11]
+
+[pr11]: https://github.com/rust-lang/rustc-stable-hash/pull/11
+
 # 0.1.0
 
 - Rename `StableHasherResult` to `FromStableHash` [#8][pr8]
