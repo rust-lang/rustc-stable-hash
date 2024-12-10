@@ -88,6 +88,7 @@ pub trait ExtendedHasher: Hasher {
 /// let hash: Hash128 = hasher.finish();
 /// ```
 #[must_use]
+#[derive(Clone)]
 pub struct StableHasher<H: ExtendedHasher> {
     state: H,
 }

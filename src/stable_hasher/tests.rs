@@ -112,3 +112,24 @@ fn test_isize_compression() {
     check_hash(0xFF, 0xFFFFFFFFFFFFFFFF);
     check_hash(u64::MAX /* -1 */, 1);
 }
+
+#[test]
+fn test_cloned_hasher_output() {
+    // Test that integers are handled consistently across platforms.
+    let test_u8 = 0xAB_u8;
+    let test_u16 = 0xFFEE_u16;
+    let test_u32 = 0x445577AA_u32;
+
+    let mut h1 = StableSipHasher128::new();
+    test_u8.hash(&mut h1);
+    test_u16.hash(&mut h1);
+
+    let h2 = h1.clone();
+    let mut h3 = h1.clone();
+    // Make sure the cloned hasher can be fed more values.
+    test_u32.hash(&mut h3);
+
+    let h1_hash: TestHash = h1.finish();
+    assert_eq!(h1_hash, h2.finish());
+    assert_ne!(h1_hash, h3.finish());
+}
