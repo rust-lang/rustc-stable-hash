@@ -1,6 +1,6 @@
 [package]
 name = "rustc-stable-hash"
-version = "0.1.0"
+version = "0.1.1"
 description = "A stable hashing algorithm used by rustc"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
