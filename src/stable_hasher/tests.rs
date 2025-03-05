@@ -133,3 +133,23 @@ fn test_cloned_hasher_output() {
     assert_eq!(h1_hash, h2.finish());
     assert_ne!(h1_hash, h3.finish());
 }
+
+#[test]
+fn test_hash_trait_finish() {
+    fn hash<H: Hasher>(h: &H) -> u64 {
+        h.finish()
+    }
+
+    // Test that integers are handled consistently across platforms.
+    let test_u8 = 0xAB_u8;
+    let test_u16 = 0xFFEE_u16;
+    let test_u32 = 0x445577AA_u32;
+
+    let mut h1 = StableSipHasher128::new();
+    test_u8.hash(&mut h1);
+    test_u16.hash(&mut h1);
+    test_u32.hash(&mut h1);
+
+    assert_eq!(hash(&h1), hash(&h1));
+    assert_eq!(hash(&h1), 13655241286414701638);
+}

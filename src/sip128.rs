@@ -529,7 +529,7 @@ impl Hasher for SipHasher128 {
         };
 
         // Combining the two halves makes sure we get a good quality hash.
-        a.wrapping_mul(3).wrapping_add(b).to_le()
+        a.wrapping_mul(3).wrapping_add(b)
     }
 }
 
