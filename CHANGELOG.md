@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.1.2
+
+- Fix `<StableSipHasher128 as Hasher>::finish` not being platform agnostic [#12][pr12]
+
+[pr12]: https://github.com/rust-lang/rustc-stable-hash/pull/12
+
 # 0.1.1
 
 - feat: derive `Clone` for `StableHasher` [#11][pr11]
