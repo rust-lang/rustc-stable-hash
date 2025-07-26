@@ -7,7 +7,7 @@ A stable hashing algorithm used by `rustc`: cross-platform, deterministic, not s
 
 This crate provides facilities with the `StableHasher` structure to create stable hashers over *unstable* hashers by abstracting over them the handling of endian-ness and the target `usize`/`isize` bit size difference.
 
-Currently, this crate provides it's own implementation of 128-bit `SipHasher`: `SipHasher128`; with `StableSipHasher128` for the stable variant. 
+Currently, this crate provides its own implementation of 128-bit `SipHasher`: `SipHasher128`; with `StableSipHasher128` for the stable variant. 
 
 ## Usage
 
